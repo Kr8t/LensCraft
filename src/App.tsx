@@ -112,6 +112,8 @@ export default function App() {
           model: "gemini-3.1-pro-preview",
           contents: `You are a world-class photography prompt engineer. Take the following base prompt and "juice it up" with extreme detail, professional photography terminology (composition, color theory, lighting physics, gear specifics), and atmospheric depth. Make it highly descriptive and actionable for an AI image generator.
 
+CRITICAL: You MUST maintain the core subject exactly as described in the base prompt. Do not change, replace, or remove the primary subject. Your task is to enhance the technical details, atmosphere, lighting, and descriptive quality SURROUNDING that subject, not to alter the subject itself.
+
 Base Prompt: ${basePrompt}
 
 Also, generate a concise negative prompt to ensure the highest photographic quality.
