@@ -338,74 +338,93 @@ Output your response in the following JSON format:
           </div>
         </div>
 
-        {/* Middle Section: Vertical Columns */}
-        <div className="flex-1 overflow-hidden flex gap-4 p-2">
-          <SelectionColumn 
-            label="Body" 
-            options={CAMERA_BODIES}
-            value={selectedBody}
-            onChange={setSelectedBody}
-          />
-          <SelectionColumn 
-            label="Lens" 
-            options={LENSES}
-            value={selectedLens}
-            onChange={setSelectedLens}
-          />
-          <SelectionColumn 
-            label="Filter" 
-            options={LENS_FILTERS}
-            value={selectedFilter}
-            onChange={setSelectedFilter}
-          />
-          <SelectionColumn 
-            label="Style" 
-            options={LIGHTING_STYLES}
-            value={selectedStyle}
-            onChange={setSelectedStyle}
-          />
-          <SelectionColumn 
-            label="Weather" 
-            options={WEATHER_EFFECTS}
-            value={selectedWeather}
-            onChange={setSelectedWeather}
-          />
-          <SelectionColumn 
-            label="Shot Size" 
-            options={SHOT_SIZES}
-            value={selectedShotSize}
-            onChange={setSelectedShotSize}
-          />
-          <SelectionColumn 
-            label="Film Stock" 
-            options={FILM_STOCKS}
-            value={selectedFilmStock}
-            onChange={setSelectedFilmStock}
-          />
-          <SelectionColumn 
-            label="Palette" 
-            options={COLOR_PALETTES}
-            value={selectedPalette}
-            onChange={setSelectedPalette}
-          />
-          <SelectionColumn 
-            label="Period" 
-            options={TIME_PERIODS}
-            value={selectedPeriod}
-            onChange={setSelectedPeriod}
-          />
-          <SelectionColumn 
-            label="Engine" 
-            options={ENGINE_OPTIMIZATIONS}
-            value={selectedEngine}
-            onChange={setSelectedEngine}
-          />
-          <SelectionColumn 
-            label="Aspect" 
-            options={ASPECT_RATIOS}
-            value={selectedAspectRatio}
-            onChange={setSelectedAspectRatio}
-          />
+        {/* Middle Section: Vertical Columns Grouped */}
+        <div className="flex-1 overflow-hidden flex flex-col gap-2">
+          {/* Technical Group */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2 px-2">
+              <Zap className="w-3 h-3 text-stone-400" />
+              <span className="text-[9px] font-bold uppercase tracking-widest text-stone-400">Technical Gear & Engine</span>
+            </div>
+            <div className="flex gap-4 p-2 bg-stone-50/50 rounded-2xl border border-stone-100 overflow-x-auto selection-group-scroll">
+              <SelectionColumn 
+                label="Body" 
+                options={CAMERA_BODIES}
+                value={selectedBody}
+                onChange={setSelectedBody}
+              />
+              <SelectionColumn 
+                label="Lens" 
+                options={LENSES}
+                value={selectedLens}
+                onChange={setSelectedLens}
+              />
+              <SelectionColumn 
+                label="Aspect" 
+                options={ASPECT_RATIOS}
+                value={selectedAspectRatio}
+                onChange={setSelectedAspectRatio}
+              />
+              <SelectionColumn 
+                label="Engine" 
+                options={ENGINE_OPTIMIZATIONS}
+                value={selectedEngine}
+                onChange={setSelectedEngine}
+              />
+            </div>
+          </div>
+
+          {/* Creative Group */}
+          <div className="flex-1 flex flex-col gap-1 overflow-hidden">
+            <div className="flex items-center gap-2 px-2">
+              <Sparkles className="w-3 h-3 text-stone-400" />
+              <span className="text-[9px] font-bold uppercase tracking-widest text-stone-400">Creative & Atmospheric</span>
+            </div>
+            <div className="flex-1 flex gap-4 p-2 bg-stone-50/50 rounded-2xl border border-stone-100 overflow-x-auto selection-group-scroll">
+              <SelectionColumn 
+                label="Shot Size" 
+                options={SHOT_SIZES}
+                value={selectedShotSize}
+                onChange={setSelectedShotSize}
+              />
+              <SelectionColumn 
+                label="Style" 
+                options={LIGHTING_STYLES}
+                value={selectedStyle}
+                onChange={setSelectedStyle}
+              />
+              <SelectionColumn 
+                label="Weather" 
+                options={WEATHER_EFFECTS}
+                value={selectedWeather}
+                onChange={setSelectedWeather}
+              />
+              <SelectionColumn 
+                label="Film Stock" 
+                options={FILM_STOCKS}
+                value={selectedFilmStock}
+                onChange={setSelectedFilmStock}
+              />
+              <SelectionColumn 
+                label="Filter" 
+                options={LENS_FILTERS}
+                value={selectedFilter}
+                onChange={setSelectedFilter}
+              />
+              <SelectionColumn 
+                label="Palette" 
+                options={COLOR_PALETTES}
+                value={selectedPalette}
+                onChange={setSelectedPalette}
+              />
+              <SelectionColumn 
+                label="Period" 
+                options={TIME_PERIODS}
+                value={selectedPeriod}
+                onChange={setSelectedPeriod}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Bottom Section: Prompt Output */}
