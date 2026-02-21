@@ -11,7 +11,6 @@ import {
   Focus, 
   Copy, 
   RefreshCw, 
-  Image as ImageIcon,
   ChevronRight,
   Sparkles,
   Check,
@@ -19,7 +18,10 @@ import {
   Dices,
   History,
   Trash2,
-  X
+  X,
+  Upload,
+  Image as ImageIcon,
+  FileSearch
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -65,7 +67,54 @@ export default function App() {
   const [showHistory, setShowHistory] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isThinkingMode, setIsThinkingMode] = useState(false);
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleAnalyzeImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsAnalyzing(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64Data = (reader.result as string).split(',')[1];
+        
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const response = await ai.models.generateContent({
+          model: "gemini-3-flash-preview",
+          contents: [
+            {
+              parts: [
+                { inlineData: { data: base64Data, mimeType: file.type } },
+                { text: "Analyze this photograph. Provide a concise, highly descriptive scene description (subject) that captures the core elements, mood, and composition. Also, suggest the most likely camera gear (body, lens), lighting style, and shot size used. Return the result in JSON format: { \"subject\": \"...\", \"suggestedBodyId\": \"...\", \"suggestedLensId\": \"...\", \"suggestedStyleId\": \"...\", \"suggestedShotSizeId\": \"...\" }. Use the IDs from a standard professional photography context if possible, but prioritize the 'subject' string." }
+              ]
+            }
+          ],
+          config: { responseMimeType: "application/json" }
+        });
+
+        try {
+          const result = JSON.parse(response.text || '{}');
+          if (result.subject) setSubject(result.subject);
+          // Optionally set other fields if they match our constants
+          if (result.suggestedBodyId && CAMERA_BODIES.some(b => b.id === result.suggestedBodyId)) setSelectedBody(result.suggestedBodyId);
+          if (result.suggestedLensId && LENSES.some(l => l.id === result.suggestedLensId)) setSelectedLens(result.suggestedLensId);
+          if (result.suggestedStyleId && LIGHTING_STYLES.some(s => s.id === result.suggestedStyleId)) setSelectedStyle(result.suggestedStyleId);
+          if (result.suggestedShotSizeId && SHOT_SIZES.some(s => s.id === result.suggestedShotSizeId)) setSelectedShotSize(result.suggestedShotSizeId);
+        } catch (e) {
+          console.error("Failed to parse analysis result", e);
+        }
+        setIsAnalyzing(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Error analyzing image:", error);
+      setIsAnalyzing(false);
+    }
+  };
 
   const constructPrompt = useCallback(() => {
     const bodyObj = CAMERA_BODIES.find(b => b.id === selectedBody);
@@ -110,13 +159,17 @@ export default function App() {
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
         const response = await ai.models.generateContent({
           model: "gemini-3.1-pro-preview",
-          contents: `You are a world-class photography prompt engineer. Take the following base prompt and "juice it up" with extreme detail, professional photography terminology (composition, color theory, lighting physics, gear specifics), and atmospheric depth. Make it highly descriptive and actionable for an AI image generator.
+          contents: `You are a world-class photography prompt engineer and AI content policy expert. Take the following base prompt and "juice it up" with extreme detail, professional photography terminology, and atmospheric depth.
 
-CRITICAL: You MUST maintain the core subject exactly as described in the base prompt. Do not change, replace, or remove the primary subject. Your task is to enhance the technical details, atmosphere, lighting, and descriptive quality SURROUNDING that subject, not to alter the subject itself.
+CRITICAL SAFETY & POLICY INSTRUCTIONS:
+1. SUBJECT ANONYMITY: Refer to the person as "this person" or "the subject". Do not use specific names or overly descriptive personal identifiers if they feel too intimate.
+2. CLOTHING CENSORSHIP: If the base prompt mentions "bikini", "swimwear", "lingerie", "undergarments", or any potentially suggestive clothing, you MUST OMIT the clothing description entirely. Do not replace it with "resort wear" or other fashion terms. Instead, focus the prompt on the environment, lighting physics, skin textures (in a clinical/photographic sense), and the subject's expression/pose.
+3. FILTER AVOIDANCE: Avoid any keywords that could be interpreted as suggestive, violent, or sensitive. Use clinical, technical, and artistic terminology (e.g., "anatomical precision", "sub-surface scattering", "chiaroscuro").
+4. SUBJECT INTEGRITY: Maintain the core essence of the scene, but strictly follow the censorship rules above.
 
 Base Prompt: ${basePrompt}
 
-Also, generate a concise negative prompt to ensure the highest photographic quality.
+Also, generate a concise negative prompt that reinforces these safety standards.
 
 Output your response in the following JSON format:
 {
@@ -136,6 +189,27 @@ Output your response in the following JSON format:
         } catch (e) {
           finalPrompt = response.text || basePrompt;
         }
+
+        // Second Pass: Strict Safety Audit
+        const auditResponse = await ai.models.generateContent({
+          model: "gemini-3-flash-preview",
+          contents: `Review the following AI image generation prompt for strict safety compliance. 
+          
+          RULES:
+          1. NO mention of bikinis, lingerie, or undergarments.
+          2. NO suggestive or intimate clothing descriptions.
+          3. NO specific personal names.
+          4. The subject must be referred to as "the subject" or "this person".
+          
+          If the prompt violates these rules, rewrite it to be 100% safe while preserving the artistic and technical quality. Focus on the environment and lighting.
+          
+          Prompt to Audit: ${finalPrompt}
+          
+          Output ONLY the sanitized prompt text.`,
+        });
+        
+        finalPrompt = auditResponse.text || finalPrompt;
+
       } catch (error) {
         console.error("Error generating prompt with AI:", error);
       } finally {
@@ -198,13 +272,30 @@ Output your response in the following JSON format:
         
         {/* Top Section: Subject & Exposure/Aperture/Shutter */}
         <div className="flex gap-4 shrink-0">
-          <div className="flex-1">
+          <div className="flex-1 relative group">
             <textarea
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="Describe your scene..."
-              className="w-full h-full p-3 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all resize-none shadow-sm text-sm"
+              placeholder="Describe your scene or upload a photo to analyze..."
+              className="w-full h-full p-3 pr-12 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all resize-none shadow-sm text-sm"
             />
+            <div className="absolute right-3 bottom-3 flex gap-2">
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleAnalyzeImage} 
+                className="hidden" 
+                accept="image/*" 
+              />
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isAnalyzing}
+                className="p-2 bg-stone-50 hover:bg-emerald-50 text-stone-400 hover:text-emerald-600 rounded-lg border border-stone-100 transition-all shadow-sm disabled:opacity-50"
+                title="Analyze photo to extract scene description"
+              >
+                {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
           <div className="w-80 bg-white border border-stone-200 rounded-xl p-3 shadow-sm flex flex-col gap-3">
             <div className="flex-1">
@@ -371,11 +462,14 @@ Output your response in the following JSON format:
               </div>
             </div>
             <div className="flex-1 overflow-y-auto pr-2 selection-group-scroll bg-stone-50/50 rounded-xl p-4 border border-stone-100 flex flex-col gap-4">
-              <div>
+              <div className="flex-1 flex flex-col">
                 <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600 mb-1 block">Main Prompt</span>
-                <p className="text-base font-medium leading-relaxed text-stone-800 italic">
-                  {generatedPrompt || "Select options above and click Re-Architect to build your professional photography prompt..."}
-                </p>
+                <textarea
+                  value={generatedPrompt}
+                  onChange={(e) => setGeneratedPrompt(e.target.value)}
+                  placeholder="Select options above and click Re-Architect to build your professional photography prompt..."
+                  className="flex-1 w-full bg-transparent text-base font-medium leading-relaxed text-stone-800 italic resize-none outline-none focus:ring-0"
+                />
               </div>
               {negativePrompt && (
                 <div className="pt-4 border-t border-stone-200/50">
