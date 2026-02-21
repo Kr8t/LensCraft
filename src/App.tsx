@@ -15,10 +15,28 @@ import {
   ChevronRight,
   Sparkles,
   Check,
-  Loader2
+  Loader2,
+  Dices,
+  History,
+  Trash2,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { CAMERA_BODIES, LENSES, LIGHTING_STYLES, LIGHTING_TYPES, QUALITY_OPTIONS, ASPECT_RATIOS, SHOT_SIZES } from './constants';
+import { 
+  CAMERA_BODIES, 
+  LENSES, 
+  LIGHTING_STYLES, 
+  LIGHTING_TYPES, 
+  QUALITY_OPTIONS, 
+  ASPECT_RATIOS, 
+  SHOT_SIZES, 
+  FILM_STOCKS,
+  LENS_FILTERS,
+  COLOR_PALETTES,
+  WEATHER_EFFECTS,
+  TIME_PERIODS,
+  ENGINE_OPTIMIZATIONS
+} from './constants';
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 
 export default function App() {
@@ -28,11 +46,23 @@ export default function App() {
   const [selectedStyle, setSelectedStyle] = useState(LIGHTING_STYLES[0].id);
   const [selectedType, setSelectedType] = useState(LIGHTING_TYPES[0].id);
   const [selectedShotSize, setSelectedShotSize] = useState(SHOT_SIZES[2].id);
+  const [selectedFilmStock, setSelectedFilmStock] = useState(FILM_STOCKS[0].id);
+  const [selectedFilter, setSelectedFilter] = useState(LENS_FILTERS[0].id);
+  const [selectedPalette, setSelectedPalette] = useState(COLOR_PALETTES[0].id);
+  const [selectedWeather, setSelectedWeather] = useState(WEATHER_EFFECTS[0].id);
+  const [selectedPeriod, setSelectedPeriod] = useState(TIME_PERIODS[0].id);
+  const [selectedEngine, setSelectedEngine] = useState(ENGINE_OPTIMIZATIONS[0].id);
+  
   const [selectedQuality, setSelectedQuality] = useState(QUALITY_OPTIONS[0].id);
   const [selectedAspectRatio, setSelectedAspectRatio] = useState('16:9');
   const [exposure, setExposure] = useState(0);
+  const [aperture, setAperture] = useState(2.8);
+  const [shutterSpeed, setShutterSpeed] = useState('1/125');
   
   const [generatedPrompt, setGeneratedPrompt] = useState('');
+  const [negativePrompt, setNegativePrompt] = useState('');
+  const [promptHistory, setPromptHistory] = useState<string[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [isThinkingMode, setIsThinkingMode] = useState(false);
@@ -43,47 +73,92 @@ export default function App() {
     const styleObj = LIGHTING_STYLES.find(s => s.id === selectedStyle);
     const typeObj = LIGHTING_TYPES.find(t => t.id === selectedType);
     const shotSizeObj = SHOT_SIZES.find(s => s.id === selectedShotSize);
+    const filmObj = FILM_STOCKS.find(f => f.id === selectedFilmStock);
+    const filterObj = LENS_FILTERS.find(f => f.id === selectedFilter);
+    const paletteObj = COLOR_PALETTES.find(p => p.id === selectedPalette);
+    const weatherObj = WEATHER_EFFECTS.find(w => w.id === selectedWeather);
+    const periodObj = TIME_PERIODS.find(p => p.id === selectedPeriod);
+    const engineObj = ENGINE_OPTIMIZATIONS.find(e => e.id === selectedEngine);
 
     const baseSubject = subject.trim() || 'A professional photographic scene';
     const exposureText = exposure === 0 ? '' : ` Exposure compensation set to ${exposure > 0 ? '+' : ''}${exposure} EV for ${exposure > 0 ? 'bright, airy highlights and high-key aesthetics' : 'deep, moody shadows and rich blacks'}.`;
     
-    const gearSection = `Captured with the ${bodyObj?.name} (${bodyObj?.description}) paired with a ${lensObj?.name} lens, utilizing its ${lensObj?.description.toLowerCase()} to achieve superior micro-contrast and edge-to-edge sharpness.`;
+    const gearSection = `Captured with the ${bodyObj?.name} (${bodyObj?.description}) paired with a ${lensObj?.name} lens at f/${aperture}, ${shutterSpeed}s. Utilizing its ${lensObj?.description.toLowerCase()} to achieve superior micro-contrast and edge-to-edge sharpness.`;
     const lightingSection = `The scene is masterfully illuminated with a ${styleObj?.name} style, creating ${styleObj?.description.toLowerCase()}, and further refined by ${typeObj?.name} which adds ${typeObj?.description.toLowerCase()} and professional-grade light falloff.`;
-    const compositionSection = `The shot is framed as a ${shotSizeObj?.name}, which ${shotSizeObj?.description.toLowerCase()}.`;
+    const compositionSection = `The shot is framed as a ${shotSizeObj?.name}, which ${shotSizeObj?.description.toLowerCase()}. Set in a ${periodObj?.name} (${periodObj?.description.toLowerCase()}) context.`;
+    const filmSection = filmObj?.id === 'none' ? '' : ` Emulating the aesthetic of ${filmObj?.name} film stock, characterized by ${filmObj?.description.toLowerCase()}.`;
+    const filterSection = filterObj?.id === 'none' ? '' : ` Enhanced with a ${filterObj?.name} which ${filterObj?.description.toLowerCase()}.`;
+    const atmosphereSection = ` Atmospheric conditions: ${weatherObj?.name} (${weatherObj?.description.toLowerCase()}). Color science: ${paletteObj?.name} (${paletteObj?.description.toLowerCase()}).`;
     
-    return `Professional photography: ${baseSubject}. ${compositionSection} ${gearSection} ${lightingSection}${exposureText} Technical specifications: 8k resolution, photorealistic textures, professional color science, tack-sharp focus, cinematic composition, high dynamic range (HDR), subtle film grain, natural skin tones, and sophisticated post-processing.`;
-  }, [subject, selectedBody, selectedLens, selectedStyle, selectedType, selectedShotSize, exposure]);
+    let engineSuffix = '';
+    if (selectedEngine === 'midjourney') engineSuffix = ` --ar ${selectedAspectRatio.replace(':', '/')} --v 6.0 --stylize 250`;
+    if (selectedEngine === 'stable-diffusion') engineSuffix = ` (masterpiece:1.2), (photorealistic:1.2), (highly detailed:1.2)`;
+
+    const finalMainPrompt = `Professional photography: ${baseSubject}. ${compositionSection} ${gearSection} ${lightingSection}${filmSection}${filterSection}${atmosphereSection}${exposureText} Technical specifications: 8k resolution, photorealistic textures, professional color science, tack-sharp focus, cinematic composition, high dynamic range (HDR), subtle film grain, natural skin tones, and sophisticated post-processing.${engineSuffix}`;
+    
+    return finalMainPrompt;
+  }, [subject, selectedBody, selectedLens, selectedStyle, selectedType, selectedShotSize, selectedFilmStock, selectedFilter, selectedPalette, selectedWeather, selectedPeriod, selectedEngine, exposure, aperture, shutterSpeed, selectedAspectRatio]);
 
   const handleGeneratePrompt = async () => {
     const basePrompt = constructPrompt();
+    let finalPrompt = basePrompt;
+    let finalNegative = "cartoon, anime, 3d render, illustration, painting, drawing, low quality, blurry, distorted, watermark, signature, text, bad anatomy, extra limbs, missing fingers, low resolution, grainy, overexposed, underexposed";
     
-    if (!isThinkingMode) {
-      setGeneratedPrompt(basePrompt);
-      return;
-    }
-
-    setIsThinking(true);
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const response = await ai.models.generateContent({
-        model: "gemini-3.1-pro-preview",
-        contents: `You are a world-class photography prompt engineer. Take the following base prompt and "juice it up" with extreme detail, professional photography terminology (composition, color theory, lighting physics, gear specifics), and atmospheric depth. Make it highly descriptive and actionable for an AI image generator.
+    if (isThinkingMode) {
+      setIsThinking(true);
+      try {
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const response = await ai.models.generateContent({
+          model: "gemini-3.1-pro-preview",
+          contents: `You are a world-class photography prompt engineer. Take the following base prompt and "juice it up" with extreme detail, professional photography terminology (composition, color theory, lighting physics, gear specifics), and atmospheric depth. Make it highly descriptive and actionable for an AI image generator.
 
 Base Prompt: ${basePrompt}
 
-Output ONLY the final refined prompt. Do not include any preamble or explanation.`,
-        config: {
-          thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH }
+Also, generate a concise negative prompt to ensure the highest photographic quality.
+
+Output your response in the following JSON format:
+{
+  "prompt": "the refined main prompt",
+  "negative": "the refined negative prompt"
+}`,
+          config: {
+            thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
+            responseMimeType: "application/json"
+          }
+        });
+        
+        try {
+          const result = JSON.parse(response.text || '{}');
+          finalPrompt = result.prompt || basePrompt;
+          finalNegative = result.negative || finalNegative;
+        } catch (e) {
+          finalPrompt = response.text || basePrompt;
         }
-      });
-      
-      setGeneratedPrompt(response.text || basePrompt);
-    } catch (error) {
-      console.error("Error generating prompt with AI:", error);
-      setGeneratedPrompt(basePrompt);
-    } finally {
-      setIsThinking(false);
+      } catch (error) {
+        console.error("Error generating prompt with AI:", error);
+      } finally {
+        setIsThinking(false);
+      }
     }
+
+    setGeneratedPrompt(finalPrompt);
+    setNegativePrompt(finalNegative);
+    setPromptHistory(prev => [finalPrompt, ...prev.slice(0, 19)]);
+  };
+
+  const handleRandomize = () => {
+    setSelectedBody(CAMERA_BODIES[Math.floor(Math.random() * CAMERA_BODIES.length)].id);
+    setSelectedLens(LENSES[Math.floor(Math.random() * LENSES.length)].id);
+    setSelectedStyle(LIGHTING_STYLES[Math.floor(Math.random() * LIGHTING_STYLES.length)].id);
+    setSelectedType(LIGHTING_TYPES[Math.floor(Math.random() * LIGHTING_TYPES.length)].id);
+    setSelectedShotSize(SHOT_SIZES[Math.floor(Math.random() * SHOT_SIZES.length)].id);
+    setSelectedFilmStock(FILM_STOCKS[Math.floor(Math.random() * FILM_STOCKS.length)].id);
+    setSelectedFilter(LENS_FILTERS[Math.floor(Math.random() * LENS_FILTERS.length)].id);
+    setSelectedPalette(COLOR_PALETTES[Math.floor(Math.random() * COLOR_PALETTES.length)].id);
+    setSelectedWeather(WEATHER_EFFECTS[Math.floor(Math.random() * WEATHER_EFFECTS.length)].id);
+    setSelectedPeriod(TIME_PERIODS[Math.floor(Math.random() * TIME_PERIODS.length)].id);
+    setExposure((Math.floor(Math.random() * 9) - 4) * 0.5);
+    setAperture([1.2, 1.4, 1.8, 2.0, 2.8, 4.0, 5.6, 8.0, 11.0][Math.floor(Math.random() * 9)]);
   };
 
   const handleCopy = () => {
@@ -103,6 +178,13 @@ Output ONLY the final refined prompt. Do not include any preamble or explanation
           <h1 className="font-bold text-base tracking-tight">LensCraft</h1>
         </div>
         <div className="flex items-center gap-4">
+          <button 
+            onClick={handleRandomize}
+            className="flex items-center gap-2 px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-lg transition-colors text-[10px] font-bold uppercase tracking-wider"
+          >
+            <Dices className="w-3.5 h-3.5" />
+            Randomize
+          </button>
           <div className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">
             v1.2.0 // HORIZONTAL ENGINE
           </div>
@@ -112,31 +194,59 @@ Output ONLY the final refined prompt. Do not include any preamble or explanation
       {/* Main Content - Designed to fit without scrolling */}
       <main className="flex-1 overflow-hidden flex flex-col p-4 gap-4">
         
-        {/* Top Section: Subject & Exposure */}
+        {/* Top Section: Subject & Exposure/Aperture/Shutter */}
         <div className="flex gap-4 shrink-0">
           <div className="flex-1">
             <textarea
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="Describe your scene..."
-              className="w-full h-16 p-3 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all resize-none shadow-sm text-sm"
+              className="w-full h-full p-3 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all resize-none shadow-sm text-sm"
             />
           </div>
-          <div className="w-64 bg-white border border-stone-200 rounded-xl p-3 shadow-sm flex flex-col justify-center">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">Exposure</span>
-              <span className="text-[10px] font-mono font-bold text-emerald-600">{exposure > 0 ? '+' : ''}{exposure} EV</span>
+          <div className="w-80 bg-white border border-stone-200 rounded-xl p-3 shadow-sm flex flex-col gap-3">
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-stone-400">Exposure</span>
+                <span className="text-[9px] font-mono font-bold text-emerald-600">{exposure > 0 ? '+' : ''}{exposure} EV</span>
+              </div>
+              <input 
+                type="range" min="-2" max="2" step="0.5" value={exposure} 
+                onChange={(e) => setExposure(parseFloat(e.target.value))}
+                className="w-full h-1 bg-stone-100 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+              />
             </div>
-            <input 
-              type="range" min="-2" max="2" step="0.5" value={exposure} 
-              onChange={(e) => setExposure(parseFloat(e.target.value))}
-              className="w-full h-1 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-            />
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-stone-400">Aperture</span>
+                <span className="text-[9px] font-mono font-bold text-emerald-600">f/{aperture}</span>
+              </div>
+              <input 
+                type="range" min="1.2" max="16" step="0.2" value={aperture} 
+                onChange={(e) => setAperture(parseFloat(e.target.value))}
+                className="w-full h-1 bg-stone-100 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+              />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-stone-400">Shutter</span>
+                <span className="text-[9px] font-mono font-bold text-emerald-600">{shutterSpeed}s</span>
+              </div>
+              <select 
+                value={shutterSpeed}
+                onChange={(e) => setShutterSpeed(e.target.value)}
+                className="w-full bg-stone-50 border-none text-[10px] font-bold text-stone-600 rounded-md py-1 px-2 outline-none"
+              >
+                {['1/8000', '1/4000', '1/2000', '1/1000', '1/500', '1/250', '1/125', '1/60', '1/30', '1/15', '1/8', '1/4', '1/2', '1', '2', '5', '10', '30'].map(s => (
+                  <option key={s} value={s}>{s}s</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
         {/* Middle Section: Vertical Columns */}
-        <div className="flex-1 overflow-hidden flex gap-6 p-2">
+        <div className="flex-1 overflow-hidden flex gap-4 p-2">
           <SelectionColumn 
             label="Body" 
             options={CAMERA_BODIES}
@@ -150,16 +260,22 @@ Output ONLY the final refined prompt. Do not include any preamble or explanation
             onChange={setSelectedLens}
           />
           <SelectionColumn 
+            label="Filter" 
+            options={LENS_FILTERS}
+            value={selectedFilter}
+            onChange={setSelectedFilter}
+          />
+          <SelectionColumn 
             label="Style" 
             options={LIGHTING_STYLES}
             value={selectedStyle}
             onChange={setSelectedStyle}
           />
           <SelectionColumn 
-            label="Type" 
-            options={LIGHTING_TYPES}
-            value={selectedType}
-            onChange={setSelectedType}
+            label="Weather" 
+            options={WEATHER_EFFECTS}
+            value={selectedWeather}
+            onChange={setSelectedWeather}
           />
           <SelectionColumn 
             label="Shot Size" 
@@ -168,16 +284,34 @@ Output ONLY the final refined prompt. Do not include any preamble or explanation
             onChange={setSelectedShotSize}
           />
           <SelectionColumn 
+            label="Film Stock" 
+            options={FILM_STOCKS}
+            value={selectedFilmStock}
+            onChange={setSelectedFilmStock}
+          />
+          <SelectionColumn 
+            label="Palette" 
+            options={COLOR_PALETTES}
+            value={selectedPalette}
+            onChange={setSelectedPalette}
+          />
+          <SelectionColumn 
+            label="Period" 
+            options={TIME_PERIODS}
+            value={selectedPeriod}
+            onChange={setSelectedPeriod}
+          />
+          <SelectionColumn 
+            label="Engine" 
+            options={ENGINE_OPTIMIZATIONS}
+            value={selectedEngine}
+            onChange={setSelectedEngine}
+          />
+          <SelectionColumn 
             label="Aspect" 
             options={ASPECT_RATIOS}
             value={selectedAspectRatio}
             onChange={setSelectedAspectRatio}
-          />
-          <SelectionColumn 
-            label="Quality" 
-            options={QUALITY_OPTIONS}
-            value={selectedQuality}
-            onChange={setSelectedQuality}
           />
         </div>
 
@@ -191,6 +325,18 @@ Output ONLY the final refined prompt. Do not include any preamble or explanation
                 <h3 className="text-[11px] font-bold uppercase tracking-wider text-stone-400">Architected Prompt</h3>
               </div>
               <div className="flex gap-2">
+                <button 
+                  onClick={() => setShowHistory(!showHistory)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all border ${
+                    showHistory 
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' 
+                      : 'bg-white border-stone-100 text-stone-400 hover:bg-stone-50'
+                  }`}
+                  title="View prompt history"
+                >
+                  <History className="w-4 h-4" />
+                  <span className="text-xs font-bold uppercase tracking-tight">History</span>
+                </button>
                 <button 
                   onClick={() => setIsThinkingMode(!isThinkingMode)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all border ${
@@ -222,13 +368,112 @@ Output ONLY the final refined prompt. Do not include any preamble or explanation
                 </button>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto pr-2 selection-group-scroll bg-stone-50/50 rounded-xl p-4 border border-stone-100">
-              <p className="text-lg font-medium leading-relaxed text-stone-800 italic">
-                {generatedPrompt || "Select options above and click Re-Architect to build your professional photography prompt..."}
-              </p>
+            <div className="flex-1 overflow-y-auto pr-2 selection-group-scroll bg-stone-50/50 rounded-xl p-4 border border-stone-100 flex flex-col gap-4">
+              <div>
+                <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600 mb-1 block">Main Prompt</span>
+                <p className="text-base font-medium leading-relaxed text-stone-800 italic">
+                  {generatedPrompt || "Select options above and click Re-Architect to build your professional photography prompt..."}
+                </p>
+              </div>
+              {negativePrompt && (
+                <div className="pt-4 border-t border-stone-200/50">
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-red-500 mb-1 block">Negative Prompt</span>
+                  <p className="text-xs text-stone-500 italic">
+                    {negativePrompt}
+                  </p>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(negativePrompt);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    className="mt-2 text-[9px] font-bold uppercase tracking-tight text-stone-400 hover:text-stone-600 transition-colors flex items-center gap-1"
+                  >
+                    <Copy className="w-3 h-3" /> Copy Negative
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
+
+        {/* History Modal/Overlay */}
+        <AnimatePresence>
+          {showHistory && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+              onClick={() => setShowHistory(false)}
+            >
+              <motion.div 
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white w-full max-w-2xl max-h-[80vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="p-6 border-b border-stone-100 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <History className="w-5 h-5 text-emerald-600" />
+                    <h2 className="font-bold text-lg">Prompt History</h2>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <button 
+                      onClick={() => setPromptHistory([])}
+                      className="text-stone-400 hover:text-red-500 transition-colors p-2"
+                      title="Clear history"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => setShowHistory(false)}
+                      className="text-stone-400 hover:text-stone-600 transition-colors p-2"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 selection-group-scroll">
+                  {promptHistory.length === 0 ? (
+                    <div className="h-40 flex flex-col items-center justify-center text-stone-300 gap-2">
+                      <History className="w-8 h-8 opacity-20" />
+                      <p className="text-sm font-medium uppercase tracking-widest opacity-30">No history yet</p>
+                    </div>
+                  ) : (
+                    promptHistory.map((prompt, i) => (
+                      <div key={i} className="group relative bg-stone-50 rounded-2xl p-4 border border-stone-100 hover:border-emerald-200 transition-all">
+                        <p className="text-sm text-stone-700 italic pr-12 line-clamp-3">{prompt}</p>
+                        <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => {
+                              navigator.clipboard.writeText(prompt);
+                              setCopied(true);
+                              setTimeout(() => setCopied(false), 2000);
+                            }}
+                            className="p-2 bg-white rounded-lg shadow-sm border border-stone-200 hover:bg-emerald-50 hover:border-emerald-200 transition-all text-stone-500 hover:text-emerald-600"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setGeneratedPrompt(prompt);
+                              setShowHistory(false);
+                            }}
+                            className="p-2 bg-white rounded-lg shadow-sm border border-stone-200 hover:bg-emerald-50 hover:border-emerald-200 transition-all text-stone-500 hover:text-emerald-600"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );

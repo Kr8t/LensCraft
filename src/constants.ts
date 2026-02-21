@@ -68,3 +68,60 @@ export const SHOT_SIZES = [
   { id: 'high-angle', name: 'High Angle', description: 'Looking down at subject, vulnerable or overview' },
   { id: 'birds-eye', name: 'Bird\'s Eye', description: 'Directly from above, map-like perspective' },
 ];
+
+export const FILM_STOCKS = [
+  { id: 'none', name: 'Digital (Clean)', description: 'Modern digital look, no grain' },
+  { id: 'kodak-portra-400', name: 'Kodak Portra 400', description: 'Warm skin tones, fine grain, classic professional look' },
+  { id: 'fujifilm-superia-400', name: 'Fujifilm Superia 400', description: 'Cooler greens and magentas, versatile consumer film' },
+  { id: 'kodak-gold-200', name: 'Kodak Gold 200', description: 'Warm, nostalgic, saturated yellows and reds' },
+  { id: 'ilford-hp5', name: 'Ilford HP5 Plus', description: 'Classic black and white, rich contrast, medium grain' },
+  { id: 'kodak-ektar-100', name: 'Kodak Ektar 100', description: 'Ultra-vivid colors, extremely fine grain, high saturation' },
+  { id: 'cinestill-800t', name: 'CineStill 800T', description: 'Tungsten-balanced, cinematic halation around highlights' },
+  { id: 'fujifilm-velvia-50', name: 'Fujifilm Velvia 50', description: 'Extreme saturation and contrast, legendary for landscapes' },
+  { id: 'polaroid', name: 'Polaroid 600', description: 'Instant film look, soft focus, chemical artifacts' },
+];
+
+export const LENS_FILTERS = [
+  { id: 'none', name: 'No Filter', description: 'Pure lens optics' },
+  { id: 'pro-mist', name: 'Black Pro-Mist', description: 'Softens highlights, adds a blooming glow, cinematic bloom' },
+  { id: 'circular-polarizer', name: 'Circular Polarizer', description: 'Reduces reflections, deepens blue skies, increases saturation' },
+  { id: 'nd-filter', name: 'ND Filter (Long Exp)', description: 'Neutral density for motion blur and long exposures' },
+  { id: 'uv-haze', name: 'UV / Haze', description: 'Slightly warms the scene, reduces atmospheric haze' },
+  { id: 'anamorphic-streak', name: 'Anamorphic Streak', description: 'Adds horizontal blue lens flares' },
+];
+
+export const COLOR_PALETTES = [
+  { id: 'natural', name: 'Natural / Realistic', description: 'True-to-life color reproduction' },
+  { id: 'teal-orange', name: 'Teal & Orange', description: 'Classic cinematic blockbuster look, high contrast' },
+  { id: 'monochrome', name: 'Monochromatic', description: 'Variations of a single hue for emotional impact' },
+  { id: 'complementary', name: 'Complementary', description: 'Opposite colors for vibrant, dynamic energy' },
+  { id: 'analogous', name: 'Analogous', description: 'Neighboring colors for harmony and serenity' },
+  { id: 'triadic', name: 'Triadic', description: 'Three evenly spaced colors for a bold, balanced look' },
+  { id: 'muted-pastel', name: 'Muted Pastel', description: 'Soft, desaturated colors for a gentle, airy feel' },
+];
+
+export const WEATHER_EFFECTS = [
+  { id: 'clear', name: 'Clear Sky', description: 'Crisp, unobstructed light' },
+  { id: 'heavy-fog', name: 'Heavy Fog', description: 'Low visibility, mysterious, diffused light' },
+  { id: 'rain-slicked', name: 'Rain-Slicked', description: 'Wet surfaces, reflections, moody atmosphere' },
+  { id: 'volumetric-dust', name: 'Volumetric Dust', description: 'Visible particles in light beams, "God rays"' },
+  { id: 'snowing', name: 'Soft Snowfall', description: 'White flakes, muted sounds, cold atmosphere' },
+  { id: 'thunderstorm', name: 'Thunderstorm', description: 'Dramatic lightning flashes, dark clouds' },
+  { id: 'golden-haze', name: 'Golden Haze', description: 'Warm, dusty atmosphere during sunset' },
+];
+
+export const TIME_PERIODS = [
+  { id: 'modern', name: 'Modern Day', description: 'Current contemporary look' },
+  { id: 'vintage-70s', name: '1970s Vintage', description: 'Warm tones, slight grain, retro fashion' },
+  { id: 'noir-40s', name: '1940s Film Noir', description: 'High contrast black and white, dramatic shadows' },
+  { id: 'cyberpunk-future', name: 'Cyberpunk Future', description: 'Neon lights, high-tech, dark rainy streets' },
+  { id: 'renaissance', name: 'Renaissance', description: 'Chiaroscuro lighting, oil painting textures' },
+  { id: 'victorian', name: 'Victorian Era', description: 'Ornate details, gaslight atmosphere' },
+];
+
+export const ENGINE_OPTIMIZATIONS = [
+  { id: 'standard', name: 'Standard', description: 'General high-quality prompt' },
+  { id: 'midjourney', name: 'Midjourney v6', description: 'Optimized for MJ stylization and parameters' },
+  { id: 'dalle3', name: 'DALL-E 3', description: 'Descriptive, natural language focus' },
+  { id: 'stable-diffusion', name: 'Stable Diffusion XL', description: 'Keyword and token-heavy optimization' },
+];
