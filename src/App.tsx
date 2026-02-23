@@ -69,6 +69,7 @@ export default function App() {
   const [isThinking, setIsThinking] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isThinkingMode, setIsThinkingMode] = useState(false);
+  const [promptMode, setPromptMode] = useState<'technical' | 'creative' | 'both'>('both');
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -143,10 +144,21 @@ export default function App() {
     if (selectedEngine === 'midjourney') engineSuffix = ` --ar ${selectedAspectRatio.replace(':', '/')} --v 6.0 --stylize 250`;
     if (selectedEngine === 'stable-diffusion') engineSuffix = ` (masterpiece:1.2), (photorealistic:1.2), (highly detailed:1.2)`;
 
-    const finalMainPrompt = `Professional photography: ${baseSubject}. ${compositionSection} ${gearSection} ${lightingSection}${filmSection}${filterSection}${atmosphereSection}${exposureText} Technical specifications: 8k resolution, photorealistic textures, professional color science, tack-sharp focus, cinematic composition, high dynamic range (HDR), subtle film grain, natural skin tones, and sophisticated post-processing.${engineSuffix}`;
+    let finalMainPrompt = `Professional photography: ${baseSubject}.`;
+    
+    if (promptMode === 'both' || promptMode === 'creative') {
+      finalMainPrompt += ` ${compositionSection} ${lightingSection}${filmSection}${atmosphereSection}`;
+    }
+    
+    if (promptMode === 'both' || promptMode === 'technical') {
+      finalMainPrompt += ` ${gearSection}${filterSection}${exposureText}`;
+    }
+
+    const techSpecs = ` Technical specifications: 8k resolution, photorealistic textures, professional color science, tack-sharp focus, cinematic composition, high dynamic range (HDR), subtle film grain, natural skin tones, and sophisticated post-processing.`;
+    finalMainPrompt += `${techSpecs}${engineSuffix}`;
     
     return finalMainPrompt;
-  }, [subject, selectedBody, selectedLens, selectedStyle, selectedType, selectedShotSize, selectedFilmStock, selectedFilter, selectedPalette, selectedWeather, selectedPeriod, selectedEngine, exposure, aperture, shutterSpeed, selectedAspectRatio]);
+  }, [subject, selectedBody, selectedLens, selectedStyle, selectedType, selectedShotSize, selectedFilmStock, selectedFilter, selectedPalette, selectedWeather, selectedPeriod, selectedEngine, exposure, aperture, shutterSpeed, selectedAspectRatio, promptMode]);
 
   const handleGeneratePrompt = async () => {
     const basePrompt = constructPrompt();
@@ -244,42 +256,204 @@ Output your response in the following JSON format:
   };
 
   return (
-    <div className="h-screen flex flex-col bg-[#F5F5F4] text-[#1C1917] font-sans overflow-hidden">
-      {/* Header - Compact */}
-      <header className="border-b border-stone-200 bg-white/80 backdrop-blur-md px-6 py-3 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-emerald-600 rounded flex items-center justify-center">
-            <Camera className="text-white w-4 h-4" />
-          </div>
-          <h1 className="font-bold text-base tracking-tight">LensCraft</h1>
-        </div>
+    <div className="h-screen bg-bauhaus-cream flex flex-col font-sans overflow-hidden border-[12px] border-bauhaus-black">
+      {/* Header */}
+      <header className="h-16 border-b-4 border-bauhaus-black flex items-center justify-between px-6 bg-white">
         <div className="flex items-center gap-4">
+          <div className="w-10 h-10 bg-bauhaus-red flex items-center justify-center border-2 border-bauhaus-black">
+            <Camera className="text-white w-6 h-6" />
+          </div>
+          <h1 className="font-black text-2xl uppercase tracking-tighter">LensCraft</h1>
+        </div>
+        <div className="flex items-center gap-6">
           <button 
             onClick={handleRandomize}
-            className="flex items-center gap-2 px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-lg transition-colors text-[10px] font-bold uppercase tracking-wider"
+            className="flex items-center gap-2 px-4 py-2 bg-bauhaus-yellow border-2 border-bauhaus-black hover:bg-bauhaus-black hover:text-white transition-all text-xs font-black uppercase tracking-widest"
           >
-            <Dices className="w-3.5 h-3.5" />
+            <Dices className="w-4 h-4" />
             Randomize
           </button>
-          <div className="text-[10px] font-mono text-stone-400 uppercase tracking-widest">
-            v1.2.0 // HORIZONTAL ENGINE
+          <div className="text-[10px] font-mono font-bold uppercase tracking-[0.2em]">
+            v2.0.0 // BAUHAUS_EDITION
           </div>
         </div>
       </header>
 
-      {/* Main Content - Designed to fit without scrolling */}
-      <main className="flex-1 overflow-hidden flex flex-col p-4 gap-4">
+      {/* Main Content - Side-by-Side Layout */}
+      <main className="flex-1 overflow-hidden flex flex-row p-0 gap-0">
         
-        {/* Top Section: Subject & Exposure/Aperture/Shutter */}
-        <div className="flex gap-4 shrink-0">
-          <div className="flex-1 relative group">
+        {/* Left Panel: Options (Wider) */}
+        <div className="w-[60%] border-r-4 border-bauhaus-black flex flex-col overflow-hidden bg-white">
+          {/* Prompt Mode Toggle */}
+          <div className="flex border-b-4 border-bauhaus-black shrink-0 bg-bauhaus-black p-1 gap-1">
+            {(['technical', 'creative', 'both'] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setPromptMode(mode)}
+                className={`flex-1 py-3 text-[11px] font-black uppercase tracking-[0.2em] transition-all border-2 border-transparent ${
+                  promptMode === mode 
+                    ? 'bg-bauhaus-yellow text-bauhaus-black border-bauhaus-black' 
+                    : 'bg-bauhaus-black text-white/40 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex-1 overflow-y-auto selection-group-scroll flex flex-col gap-0">
+            {/* Technical Group */}
+            <div className={`flex flex-col gap-0 border-b-4 border-bauhaus-black transition-all duration-500 ${promptMode === 'creative' ? 'opacity-20 grayscale pointer-events-none scale-[0.98]' : 'opacity-100'}`}>
+              <div className="flex items-center justify-between px-4 py-2 bg-bauhaus-blue border-b-2 border-bauhaus-black">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-white" />
+                  <span className="text-[11px] font-black uppercase tracking-[0.2em] text-white">Technical Gear & Engine</span>
+                </div>
+                {promptMode === 'creative' && <span className="text-[9px] font-black text-white/50 uppercase">Disabled</span>}
+              </div>
+              <div className="flex gap-0 bg-white overflow-x-auto selection-group-scroll h-56 border-b-2 border-bauhaus-black">
+                <SelectionColumn 
+                  label="Body" 
+                  options={CAMERA_BODIES}
+                  value={selectedBody}
+                  onChange={setSelectedBody}
+                />
+                <SelectionColumn 
+                  label="Lens" 
+                  options={LENSES}
+                  value={selectedLens}
+                  onChange={setSelectedLens}
+                />
+                <SelectionColumn 
+                  label="Aspect" 
+                  options={ASPECT_RATIOS}
+                  value={selectedAspectRatio}
+                  onChange={setSelectedAspectRatio}
+                />
+                <SelectionColumn 
+                  label="Engine" 
+                  options={ENGINE_OPTIMIZATIONS}
+                  value={selectedEngine}
+                  onChange={setSelectedEngine}
+                />
+              </div>
+              <div className="p-6 bg-bauhaus-yellow flex flex-col gap-6">
+                <div className="grid grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-widest">Exposure Compensation</span>
+                      <span className="text-[10px] font-mono font-black bg-bauhaus-black text-white px-2 py-0.5">{exposure > 0 ? '+' : ''}{exposure} EV</span>
+                    </div>
+                    <input 
+                      type="range" min="-2" max="2" step="0.5" value={exposure} 
+                      onChange={(e) => setExposure(parseFloat(e.target.value))}
+                      className="w-full h-2 bg-bauhaus-black rounded-none appearance-none cursor-pointer accent-bauhaus-red border border-bauhaus-black"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-widest">Aperture Setting</span>
+                      <span className="text-[10px] font-mono font-black bg-bauhaus-black text-white px-2 py-0.5">f/{aperture}</span>
+                    </div>
+                    <input 
+                      type="range" min="1.2" max="16" step="0.2" value={aperture} 
+                      onChange={(e) => setAperture(parseFloat(e.target.value))}
+                      className="w-full h-2 bg-bauhaus-black rounded-none appearance-none cursor-pointer accent-bauhaus-red border border-bauhaus-black"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-6 bg-white border-4 border-bauhaus-black p-3">
+                  <span className="text-[10px] font-black uppercase tracking-widest shrink-0">Shutter Speed</span>
+                  <div className="flex-1 flex gap-1 overflow-x-auto selection-group-scroll py-1">
+                    {['1/8000', '1/4000', '1/2000', '1/1000', '1/500', '1/250', '1/125', '1/60', '1/30', '1/15', '1/8', '1/4', '1/2', '1', '2', '5', '10', '30'].map(s => (
+                      <button
+                        key={s}
+                        onClick={() => setShutterSpeed(s)}
+                        className={`px-3 py-1 text-[10px] font-black border-2 transition-all shrink-0 ${
+                          shutterSpeed === s 
+                            ? 'bg-bauhaus-red text-white border-bauhaus-black' 
+                            : 'bg-white text-bauhaus-black border-transparent hover:border-bauhaus-black'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Creative Group */}
+            <div className={`flex-1 flex flex-col gap-0 overflow-hidden transition-all duration-500 ${promptMode === 'technical' ? 'opacity-20 grayscale pointer-events-none scale-[0.98]' : 'opacity-100'}`}>
+              <div className="flex items-center justify-between px-4 py-2 bg-bauhaus-red border-b-2 border-bauhaus-black">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-white" />
+                  <span className="text-[11px] font-black uppercase tracking-[0.2em] text-white">Creative & Atmospheric</span>
+                </div>
+                {promptMode === 'technical' && <span className="text-[9px] font-black text-white/50 uppercase">Disabled</span>}
+              </div>
+              <div className="flex-1 flex gap-0 bg-white overflow-x-auto selection-group-scroll">
+                <SelectionColumn 
+                  label="Shot Size" 
+                  options={SHOT_SIZES}
+                  value={selectedShotSize}
+                  onChange={setSelectedShotSize}
+                />
+                <SelectionColumn 
+                  label="Style" 
+                  options={LIGHTING_STYLES}
+                  value={selectedStyle}
+                  onChange={setSelectedStyle}
+                />
+                <SelectionColumn 
+                  label="Weather" 
+                  options={WEATHER_EFFECTS}
+                  value={selectedWeather}
+                  onChange={setSelectedWeather}
+                />
+                <SelectionColumn 
+                  label="Film Stock" 
+                  options={FILM_STOCKS}
+                  value={selectedFilmStock}
+                  onChange={setSelectedFilmStock}
+                />
+                <SelectionColumn 
+                  label="Filter" 
+                  options={LENS_FILTERS}
+                  value={selectedFilter}
+                  onChange={setSelectedFilter}
+                />
+                <SelectionColumn 
+                  label="Palette" 
+                  options={COLOR_PALETTES}
+                  value={selectedPalette}
+                  onChange={setSelectedPalette}
+                />
+                <SelectionColumn 
+                  label="Period" 
+                  options={TIME_PERIODS}
+                  value={selectedPeriod}
+                  onChange={setSelectedPeriod}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Panel: Subject & Output (Narrower) */}
+        <div className="w-[40%] flex flex-col overflow-hidden bg-bauhaus-cream">
+          {/* Scene Description */}
+          <div className="h-[45%] relative group border-b-4 border-bauhaus-black bg-white">
+            <div className="absolute top-0 left-0 px-4 py-1 bg-bauhaus-black text-white text-[10px] font-black uppercase tracking-widest z-10">
+              01 // Scene Subject
+            </div>
             <textarea
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="Describe your scene or upload a photo to analyze..."
-              className="w-full h-full p-3 pr-12 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all resize-none shadow-sm text-sm"
+              placeholder="DESCRIBE YOUR VISION OR UPLOAD A REFERENCE..."
+              className="w-full h-full p-10 pt-14 bg-transparent outline-none transition-all resize-none font-black text-2xl uppercase placeholder:text-stone-200 leading-tight"
             />
-            <div className="absolute right-3 bottom-3 flex gap-2">
+            <div className="absolute right-8 bottom-8 flex gap-4">
               <input 
                 type="file" 
                 ref={fileInputRef} 
@@ -290,229 +464,89 @@ Output your response in the following JSON format:
               <button 
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isAnalyzing}
-                className="p-2 bg-stone-50 hover:bg-emerald-50 text-stone-400 hover:text-emerald-600 rounded-lg border border-stone-100 transition-all shadow-sm disabled:opacity-50"
-                title="Analyze photo to extract scene description"
+                className="w-16 h-16 bg-bauhaus-blue text-white flex items-center justify-center border-4 border-bauhaus-black hover:bg-bauhaus-yellow hover:text-bauhaus-black transition-all disabled:opacity-50 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
+                title="ANALYZE PHOTO"
               >
-                {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                {isAnalyzing ? <Loader2 className="w-8 h-8 animate-spin" /> : <Upload className="w-8 h-8" />}
               </button>
             </div>
           </div>
-          <div className="w-80 bg-white border border-stone-200 rounded-xl p-3 shadow-sm flex flex-col gap-3">
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-stone-400">Exposure</span>
-                <span className="text-[9px] font-mono font-bold text-emerald-600">{exposure > 0 ? '+' : ''}{exposure} EV</span>
-              </div>
-              <input 
-                type="range" min="-2" max="2" step="0.5" value={exposure} 
-                onChange={(e) => setExposure(parseFloat(e.target.value))}
-                className="w-full h-1 bg-stone-100 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-              />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-stone-400">Aperture</span>
-                <span className="text-[9px] font-mono font-bold text-emerald-600">f/{aperture}</span>
-              </div>
-              <input 
-                type="range" min="1.2" max="16" step="0.2" value={aperture} 
-                onChange={(e) => setAperture(parseFloat(e.target.value))}
-                className="w-full h-1 bg-stone-100 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-              />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-stone-400">Shutter</span>
-                <span className="text-[9px] font-mono font-bold text-emerald-600">{shutterSpeed}s</span>
-              </div>
-              <select 
-                value={shutterSpeed}
-                onChange={(e) => setShutterSpeed(e.target.value)}
-                className="w-full bg-stone-50 border-none text-[10px] font-bold text-stone-600 rounded-md py-1 px-2 outline-none"
-              >
-                {['1/8000', '1/4000', '1/2000', '1/1000', '1/500', '1/250', '1/125', '1/60', '1/30', '1/15', '1/8', '1/4', '1/2', '1', '2', '5', '10', '30'].map(s => (
-                  <option key={s} value={s}>{s}s</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
 
-        {/* Middle Section: Vertical Columns Grouped */}
-        <div className="flex-1 overflow-hidden flex flex-col gap-2">
-          {/* Technical Group */}
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2 px-2">
-              <Zap className="w-3 h-3 text-stone-400" />
-              <span className="text-[9px] font-bold uppercase tracking-widest text-stone-400">Technical Gear & Engine</span>
+          {/* Prompt Output */}
+          <div className="flex-1 flex flex-col relative overflow-hidden bg-white">
+            <div className="absolute top-0 left-0 px-4 py-1 bg-bauhaus-black text-white text-[10px] font-black uppercase tracking-widest z-10">
+              02 // Architected Output
             </div>
-            <div className="flex gap-4 p-2 bg-stone-50/50 rounded-2xl border border-stone-100 overflow-x-auto selection-group-scroll">
-              <SelectionColumn 
-                label="Body" 
-                options={CAMERA_BODIES}
-                value={selectedBody}
-                onChange={setSelectedBody}
-              />
-              <SelectionColumn 
-                label="Lens" 
-                options={LENSES}
-                value={selectedLens}
-                onChange={setSelectedLens}
-              />
-              <SelectionColumn 
-                label="Aspect" 
-                options={ASPECT_RATIOS}
-                value={selectedAspectRatio}
-                onChange={setSelectedAspectRatio}
-              />
-              <SelectionColumn 
-                label="Engine" 
-                options={ENGINE_OPTIMIZATIONS}
-                value={selectedEngine}
-                onChange={setSelectedEngine}
-              />
-            </div>
-          </div>
-
-          {/* Creative Group */}
-          <div className="flex-1 flex flex-col gap-1 overflow-hidden">
-            <div className="flex items-center gap-2 px-2">
-              <Sparkles className="w-3 h-3 text-stone-400" />
-              <span className="text-[9px] font-bold uppercase tracking-widest text-stone-400">Creative & Atmospheric</span>
-            </div>
-            <div className="flex-1 flex gap-4 p-2 bg-stone-50/50 rounded-2xl border border-stone-100 overflow-x-auto selection-group-scroll">
-              <SelectionColumn 
-                label="Shot Size" 
-                options={SHOT_SIZES}
-                value={selectedShotSize}
-                onChange={setSelectedShotSize}
-              />
-              <SelectionColumn 
-                label="Style" 
-                options={LIGHTING_STYLES}
-                value={selectedStyle}
-                onChange={setSelectedStyle}
-              />
-              <SelectionColumn 
-                label="Weather" 
-                options={WEATHER_EFFECTS}
-                value={selectedWeather}
-                onChange={setSelectedWeather}
-              />
-              <SelectionColumn 
-                label="Film Stock" 
-                options={FILM_STOCKS}
-                value={selectedFilmStock}
-                onChange={setSelectedFilmStock}
-              />
-              <SelectionColumn 
-                label="Filter" 
-                options={LENS_FILTERS}
-                value={selectedFilter}
-                onChange={setSelectedFilter}
-              />
-              <SelectionColumn 
-                label="Palette" 
-                options={COLOR_PALETTES}
-                value={selectedPalette}
-                onChange={setSelectedPalette}
-              />
-              <SelectionColumn 
-                label="Period" 
-                options={TIME_PERIODS}
-                value={selectedPeriod}
-                onChange={setSelectedPeriod}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Section: Prompt Output */}
-        <div className="h-1/3 min-h-[180px] shrink-0">
-          <div className="h-full bg-white border border-stone-200 rounded-2xl p-6 shadow-sm flex flex-col relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500" />
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <Sparkles className="w-4 h-4 text-emerald-600" />
-                <h3 className="text-[11px] font-bold uppercase tracking-wider text-stone-400">Architected Prompt</h3>
-              </div>
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => setShowHistory(!showHistory)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all border ${
-                    showHistory 
-                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' 
-                      : 'bg-white border-stone-100 text-stone-400 hover:bg-stone-50'
-                  }`}
-                  title="View prompt history"
-                >
-                  <History className="w-4 h-4" />
-                  <span className="text-xs font-bold uppercase tracking-tight">History</span>
-                </button>
-                <button 
-                  onClick={() => setIsThinkingMode(!isThinkingMode)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all border ${
-                    isThinkingMode 
-                      ? 'bg-violet-50 border-violet-200 text-violet-700 shadow-sm' 
-                      : 'bg-white border-stone-100 text-stone-400 hover:bg-stone-50'
-                  }`}
-                  title="Enable AI-enhanced deep thinking for prompts"
-                >
-                  <Zap className={`w-4 h-4 ${isThinkingMode ? 'fill-violet-500 text-violet-500' : ''}`} />
-                  <span className="text-xs font-bold uppercase tracking-tight">Thinking Mode</span>
-                </button>
-                <button 
-                  onClick={handleCopy} 
-                  className="flex items-center gap-2 px-4 py-2 hover:bg-stone-50 rounded-xl transition-colors text-stone-500 border border-stone-100"
-                >
-                  {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                  <span className="text-xs font-bold uppercase tracking-tight">{copied ? 'Copied' : 'Copy Prompt'}</span>
-                </button>
-                <button 
-                  onClick={handleGeneratePrompt} 
-                  disabled={isThinking}
-                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-100 disabled:opacity-50"
-                >
-                  {isThinking ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                  <span className="text-xs font-bold uppercase tracking-tight">
-                    {isThinking ? 'Thinking...' : 'Re-Architect'}
-                  </span>
-                </button>
-              </div>
-            </div>
-            <div className="flex-1 overflow-y-auto pr-2 selection-group-scroll bg-stone-50/50 rounded-xl p-4 border border-stone-100 flex flex-col gap-4">
+            
+            <div className="flex-1 overflow-y-auto selection-group-scroll p-10 pt-14 flex flex-col gap-8">
               <div className="flex-1 flex flex-col">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600 mb-1 block">Main Prompt</span>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-bauhaus-red">Main Prompt</span>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => setShowHistory(!showHistory)}
+                      className={`p-2 border-2 border-bauhaus-black transition-all ${
+                        showHistory 
+                          ? 'bg-bauhaus-blue text-white' 
+                          : 'bg-white text-bauhaus-black hover:bg-bauhaus-yellow'
+                      }`}
+                      title="History"
+                    >
+                      <History className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => setIsThinkingMode(!isThinkingMode)}
+                      className={`p-2 border-2 border-bauhaus-black transition-all ${
+                        isThinkingMode 
+                          ? 'bg-bauhaus-red text-white' 
+                          : 'bg-white text-bauhaus-black hover:bg-bauhaus-yellow'
+                      }`}
+                      title="Thinking Mode"
+                    >
+                      <Focus className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
                 <textarea
                   value={generatedPrompt}
                   onChange={(e) => setGeneratedPrompt(e.target.value)}
-                  placeholder="Select options above and click Re-Architect to build your professional photography prompt..."
-                  className="flex-1 w-full bg-transparent text-base font-medium leading-relaxed text-stone-800 italic resize-none outline-none focus:ring-0"
+                  placeholder="SELECT OPTIONS AND CLICK RE-ARCHITECT..."
+                  className="flex-1 w-full bg-transparent text-xl font-bold leading-tight text-bauhaus-black uppercase resize-none outline-none focus:ring-0 placeholder:text-stone-200"
                 />
               </div>
+              
               {negativePrompt && (
-                <div className="pt-4 border-t border-stone-200/50">
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-red-500 mb-1 block">Negative Prompt</span>
-                  <p className="text-xs text-stone-500 italic">
+                <div className="pt-8 border-t-4 border-bauhaus-black">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-bauhaus-blue mb-2 block">Negative Prompt</span>
+                  <p className="text-[11px] font-bold text-stone-400 uppercase leading-relaxed">
                     {negativePrompt}
                   </p>
-                  <button 
-                    onClick={() => {
-                      navigator.clipboard.writeText(negativePrompt);
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
-                    }}
-                    className="mt-2 text-[9px] font-bold uppercase tracking-tight text-stone-400 hover:text-stone-600 transition-colors flex items-center gap-1"
-                  >
-                    <Copy className="w-3 h-3" /> Copy Negative
-                  </button>
                 </div>
               )}
             </div>
+
+            {/* Action Bar */}
+            <div className="border-t-4 border-bauhaus-black bg-bauhaus-cream p-6 flex gap-4">
+              <button 
+                onClick={handleGeneratePrompt}
+                disabled={isThinking}
+                className="flex-1 flex items-center justify-center gap-3 py-4 bg-bauhaus-black text-white border-4 border-bauhaus-black hover:bg-bauhaus-yellow hover:text-bauhaus-black transition-all disabled:opacity-50 font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
+              >
+                {isThinking ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
+                Re-Architect
+              </button>
+              <button 
+                onClick={handleCopy}
+                className="flex-1 flex items-center justify-center gap-3 py-4 bg-bauhaus-yellow text-bauhaus-black border-4 border-bauhaus-black hover:bg-bauhaus-black hover:text-white transition-all font-black uppercase text-xs tracking-widest shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1"
+              >
+                {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                Copy Prompt
+              </button>
+            </div>
           </div>
         </div>
-
-        {/* History Modal/Overlay */}
+      </main>
+   {/* History Modal/Overlay */}
         <AnimatePresence>
           {showHistory && (
             <motion.div 
@@ -526,59 +560,59 @@ Output your response in the following JSON format:
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white w-full max-w-2xl max-h-[80vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+                className="bg-bauhaus-cream w-full max-w-2xl max-h-[80vh] border-4 border-bauhaus-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] flex flex-col"
                 onClick={e => e.stopPropagation()}
               >
-                <div className="p-6 border-b border-stone-100 flex items-center justify-between">
+                <div className="p-6 border-b-4 border-bauhaus-black flex items-center justify-between bg-white">
                   <div className="flex items-center gap-3">
-                    <History className="w-5 h-5 text-emerald-600" />
-                    <h2 className="font-bold text-lg">Prompt History</h2>
+                    <History className="w-6 h-6 text-bauhaus-blue" />
+                    <h2 className="font-black text-xl uppercase tracking-tighter">Prompt History</h2>
                   </div>
                   <div className="flex items-center gap-4">
                     <button 
                       onClick={() => setPromptHistory([])}
-                      className="text-stone-400 hover:text-red-500 transition-colors p-2"
+                      className="text-stone-400 hover:text-bauhaus-red transition-colors p-2"
                       title="Clear history"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-5 h-5" />
                     </button>
                     <button 
                       onClick={() => setShowHistory(false)}
-                      className="text-stone-400 hover:text-stone-600 transition-colors p-2"
+                      className="text-stone-400 hover:text-bauhaus-black transition-colors p-2"
                     >
-                      <X className="w-5 h-5" />
+                      <X className="w-6 h-6" />
                     </button>
                   </div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-6 space-y-4 selection-group-scroll">
                   {promptHistory.length === 0 ? (
-                    <div className="h-40 flex flex-col items-center justify-center text-stone-300 gap-2">
-                      <History className="w-8 h-8 opacity-20" />
-                      <p className="text-sm font-medium uppercase tracking-widest opacity-30">No history yet</p>
+                    <div className="h-40 flex flex-col items-center justify-center text-stone-300 gap-4">
+                      <History className="w-12 h-12 opacity-20" />
+                      <p className="text-xs font-black uppercase tracking-[0.2em] opacity-30">No history yet</p>
                     </div>
                   ) : (
                     promptHistory.map((prompt, i) => (
-                      <div key={i} className="group relative bg-stone-50 rounded-2xl p-4 border border-stone-100 hover:border-emerald-200 transition-all">
-                        <p className="text-sm text-stone-700 italic pr-12 line-clamp-3">{prompt}</p>
-                        <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div key={i} className="group relative bg-white p-6 border-2 border-bauhaus-black hover:bg-bauhaus-yellow transition-all">
+                        <p className="text-sm font-bold text-bauhaus-black uppercase pr-12 line-clamp-3">{prompt}</p>
+                        <div className="absolute top-6 right-6 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button 
                             onClick={() => {
                               navigator.clipboard.writeText(prompt);
                               setCopied(true);
                               setTimeout(() => setCopied(false), 2000);
                             }}
-                            className="p-2 bg-white rounded-lg shadow-sm border border-stone-200 hover:bg-emerald-50 hover:border-emerald-200 transition-all text-stone-500 hover:text-emerald-600"
+                            className="p-2 bg-white border-2 border-bauhaus-black hover:bg-bauhaus-red hover:text-white transition-all"
                           >
-                            <Copy className="w-3.5 h-3.5" />
+                            <Copy className="w-4 h-4" />
                           </button>
                           <button 
                             onClick={() => {
                               setGeneratedPrompt(prompt);
                               setShowHistory(false);
                             }}
-                            className="p-2 bg-white rounded-lg shadow-sm border border-stone-200 hover:bg-emerald-50 hover:border-emerald-200 transition-all text-stone-500 hover:text-emerald-600"
+                            className="p-2 bg-white border-2 border-bauhaus-black hover:bg-bauhaus-blue hover:text-white transition-all"
                           >
-                            <RefreshCw className="w-3.5 h-3.5" />
+                            <RefreshCw className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
@@ -589,7 +623,6 @@ Output your response in the following JSON format:
             </motion.div>
           )}
         </AnimatePresence>
-      </main>
     </div>
   );
 }
@@ -601,20 +634,20 @@ function SelectionColumn({ label, options, value, onChange }: {
   onChange: (val: string) => void 
 }) {
   return (
-    <div className="flex flex-col h-full min-w-[140px] max-w-[200px]">
-      <div className="px-1 mb-2">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">{label}</span>
+    <div className="flex flex-col h-full min-w-[140px] max-w-[200px] border-r border-bauhaus-black last:border-r-0">
+      <div className="px-3 py-2 bg-bauhaus-black">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-white">{label}</span>
       </div>
-      <div className="flex-1 overflow-y-auto space-y-2 pr-1 selection-group-scroll">
+      <div className="flex-1 overflow-y-auto selection-group-scroll">
         {options.map((opt) => (
           <button
             key={opt.id}
             onClick={() => onChange(opt.id)}
             title={opt.description}
-            className={`w-full text-left px-3 py-2 rounded-lg border text-[11px] font-semibold transition-all ${
+            className={`w-full text-left px-3 py-3 border-b border-bauhaus-black text-[11px] font-bold uppercase tracking-tight transition-all ${
               value === opt.id 
-                ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
-                : 'bg-white border-stone-200 text-stone-600 hover:border-stone-300'
+                ? 'bg-bauhaus-red text-white' 
+                : 'bg-white text-bauhaus-black hover:bg-bauhaus-yellow'
             }`}
           >
             {opt.name}
