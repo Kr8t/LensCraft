@@ -478,7 +478,7 @@ Output your response in the following JSON format:
               02 // Architected Output
             </div>
             
-            <div className="flex-1 overflow-y-auto selection-group-scroll p-10 pt-14 flex flex-col gap-8">
+            <div className="flex-1 overflow-y-auto selection-group-scroll p-6 pt-10 flex flex-col gap-4">
               <div className="flex-1 flex flex-col">
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-[11px] font-black uppercase tracking-widest text-bauhaus-red">Main Prompt</span>
@@ -511,14 +511,14 @@ Output your response in the following JSON format:
                   value={generatedPrompt}
                   onChange={(e) => setGeneratedPrompt(e.target.value)}
                   placeholder="SELECT OPTIONS AND CLICK RE-ARCHITECT..."
-                  className="flex-1 w-full bg-transparent text-xl font-bold leading-tight text-bauhaus-black uppercase resize-none outline-none focus:ring-0 placeholder:text-stone-200"
+                  className="flex-1 w-full bg-transparent text-sm font-bold leading-relaxed text-bauhaus-black uppercase resize-none outline-none focus:ring-0 placeholder:text-stone-200"
                 />
               </div>
               
               {negativePrompt && (
-                <div className="pt-8 border-t-4 border-bauhaus-black">
+                <div className="pt-4 border-t-2 border-bauhaus-black">
                   <span className="text-[11px] font-black uppercase tracking-widest text-bauhaus-blue mb-2 block">Negative Prompt</span>
-                  <p className="text-[11px] font-bold text-stone-400 uppercase leading-relaxed">
+                  <p className="text-[10px] font-bold text-stone-400 uppercase leading-relaxed">
                     {negativePrompt}
                   </p>
                 </div>
